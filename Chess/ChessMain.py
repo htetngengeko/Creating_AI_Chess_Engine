@@ -23,13 +23,54 @@ def main():
    clock = p.time.Clock()
    screen.fill(p.Color("white"))
    game_state = ChessEngine.GameState()
+   validMoves = game_state.getValidMoves()
+   moveMade = False #flag variable for a move is made
+
    loadImages()  #only do this once before while loop
    running = True
+   sqSelected = () #no sq is selected.keep track of the last click of the user (tuple:(row,col))
+   playerClicks = [] #keep track of player clicks(two tuples:[(6,4), (4,4)])
 
    while running:
       for e in p.event.get():
          if e.type == p.QUIT:
             running = False
+
+         #mouse handler
+         elif e.type == p.MOUSEBUTTONDOWN:
+            location = p.mouse.get_pos() #(x,y) location of mouse
+            col = location[0] // SQ_SIZE
+            row = location[1] // SQ_SIZE
+
+            if sqSelected == (row,col):  #if user click the same sq twice
+               sqSelected = () #deselect
+               playerClicks = [] #clear player clicks
+            
+            else :
+               sqSelected = (row,col)
+               playerClicks.append(sqSelected) #append for both 1st and 2nd click
+            
+            if len(playerClicks) == 2:  #after 2nd click
+               move = ChessEngine.Move(playerClicks[0], playerClicks[1], game_state.board)
+               print(move.getChessNotation())
+               if move in validMoves:
+                  game_state.makeMove(move)
+                  moveMade = True
+                  sqSelected=() #reset user click
+                  playerClicks=[]
+               else:
+                  playerClicks = [sqSelected]
+         
+         #key handler
+         elif e.type == p.KEYDOWN:
+            if e.key == p.K_z: #undo when 'z' is pressed
+               game_state.undoMove()
+               moveMade = True
+         
+      if moveMade:
+         validMoves = game_state.getValidMoves()
+         moveMade = False
+               
       drawGameState(screen,game_state)
       clock.tick(MAX_FPS)
       p.display.flip()
